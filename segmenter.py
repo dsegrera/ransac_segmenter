@@ -21,7 +21,7 @@ This factor was chosen for segmentation of the 1930 census. Depending on the res
 your images, this factor may or may not work for you.
 """
 
-DOWNSAMPLE_FACTOR = 4
+DOWNSAMPLE_FACTOR = 3
 
 class RANSAC_segmenter:
     
@@ -49,7 +49,7 @@ class RANSAC_segmenter:
         EPS = 3
         bestc = 0
         best = None
-        for i in range(200):
+        for i in range(300):
             # choose 4 random matches and calculate the homography
             random.shuffle(putative_matches)
             points1 = [match[0] for match in putative_matches[:4]]

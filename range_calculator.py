@@ -105,10 +105,10 @@ def create_ranges(columns):
             break
 
         while j < len(columns[i])-1 and j < len(columns[i+1])-1:
-            cell_range = [round(min(columns[i][j][x], columns[i][j+1][x])-20),
-                          round(max(columns[i+1][j][x], columns[i+1][j+1][x]+20)),
-                          round(min(columns[i][j][y], columns[i+1][j][y])-20),
-                          round(max(columns[i][j+1][y], columns[i+1][j+1][y]+20))]
+            cell_range = [round(min(columns[i][j][x], columns[i][j+1][x])),
+                          round(max(columns[i+1][j][x], columns[i+1][j+1][x])),
+                          round(min(columns[i][j][y], columns[i+1][j][y])),
+                          round(max(columns[i][j+1][y], columns[i+1][j+1][y]))]
             ranges.append(cell_range)
             j = j + 1
 
