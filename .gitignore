@@ -2,7 +2,7 @@
 *.zip
 *.json
 *.pyc
-full_1930_set/
+full_1930_set
 old_outs/
 out/
 jobs/
