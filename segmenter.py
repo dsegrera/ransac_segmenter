@@ -6,8 +6,8 @@ import random
 import json
 import sys
 
-import range_calculator
-import utils
+import ransac_segmenter.range_calculator as range_calculator
+import ransac_segmenter.utils as utils
 from random import shuffle
 
 
@@ -24,7 +24,7 @@ your images, this factor may or may not work for you.
 DOWNSAMPLE_FACTOR = 3
 
 class RANSAC_segmenter:
-    
+
     def __init__(self, template_img_path, template_points_path):
         self.template_img = cv2.imread(template_img_path)[::DOWNSAMPLE_FACTOR, ::DOWNSAMPLE_FACTOR]
         with open(template_points_path) as f:
@@ -74,7 +74,7 @@ class RANSAC_segmenter:
             if good > bestc:
                 bestc = good
                 best = h
-        
+
         # if less than 50 points fell where they should, segmentation almost definitely failed.
         if bestc < 50:
             return None
