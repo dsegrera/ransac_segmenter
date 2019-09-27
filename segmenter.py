@@ -6,10 +6,9 @@ import random
 import json
 import sys
 
-import range_calculator
-import utils
+import ransac_segmenter.range_calculator as range_calculator
+import ransac_segmenter.utils as utils
 from random import shuffle
-
 
 """
 For efficency, we downsample the images by 4. This speeds up SIFT and reduces the
@@ -21,12 +20,13 @@ This factor was chosen for segmentation of the 1930 census. Depending on the res
 your images, this factor may or may not work for you.
 """
 
-DOWNSAMPLE_FACTOR = 3
+DOWNSAMPLE_FACTOR = 3.2
+
 
 class RANSAC_segmenter:
-    
     def __init__(self, template_img_path, template_points_path):
-        self.template_img = cv2.imread(template_img_path)[::DOWNSAMPLE_FACTOR, ::DOWNSAMPLE_FACTOR]
+        template_img = cv2.imread(template_img_path)
+        self.template_img = cv2.resize(template_img, (0, 0), fx=1 / DOWNSAMPLE_FACTOR, fy=1 / DOWNSAMPLE_FACTOR)
         with open(template_points_path) as f:
             self.template_points = json.load(f)['corners']
         self.sift = cv2.xfeatures2d.SIFT_create()
@@ -35,10 +35,12 @@ class RANSAC_segmenter:
     # returns a list of corner points on the sample image
     def segment(self, sample_image):
         old_sample_image = sample_image
-        sample_image = sample_image[::DOWNSAMPLE_FACTOR, ::DOWNSAMPLE_FACTOR]
+        sample_image = cv2.resize(sample_image, (0, 0), fx=1 / DOWNSAMPLE_FACTOR, fy=1 / DOWNSAMPLE_FACTOR)
         # get putative matches
         sample_kp, sample_descriptors = self.sift.detectAndCompute(sample_image, None)
-        putative_matches = utils.get_putative_matches(sample_kp, sample_descriptors, self.template_kp, self.template_descriptors)
+        putative_matches = utils.get_putative_matches(sample_kp, sample_descriptors,
+                                                      self.template_kp, self.template_descriptors,
+                                                      sample_image)
 
         # we probably can't actually segment if we have so few putative matches
         if len(putative_matches) < 100:
@@ -49,7 +51,7 @@ class RANSAC_segmenter:
         EPS = 3
         bestc = 0
         best = None
-        for i in range(300):
+        for i in range(200):
             # choose 4 random matches and calculate the homography
             random.shuffle(putative_matches)
             points1 = [match[0] for match in putative_matches[:4]]
@@ -74,7 +76,7 @@ class RANSAC_segmenter:
             if good > bestc:
                 bestc = good
                 best = h
-        
+
         # if less than 50 points fell where they should, segmentation almost definitely failed.
         if bestc < 50:
             return None
@@ -88,7 +90,7 @@ class RANSAC_segmenter:
         except np.linalg.LinAlgError as e:
             print('singular matrix, trying again')
             return self.segment(old_sample_image)
-        h /= h[2,2]
+        h /= h[2, 2]
         # now we have the best homography, we multiply it by all the template points.
         pts = np.ones((3, len(self.template_points)))
         for i in range(len(self.template_points)):
@@ -105,7 +107,8 @@ class RANSAC_segmenter:
 # main method will segment an entire folder of images.
 if __name__ == '__main__':
     if len(sys.argv) != 5:
-        print('usage: python segmenter.py [template_img_path] [template_points_path] [sample_directory] [out_directory]')
+        print(
+            'usage: python segmenter.py [template_img_path] [template_points_path] [sample_directory] [out_directory]')
         exit()
     template_img = sys.argv[1]
     template_points = sys.argv[2]
@@ -124,10 +127,9 @@ if __name__ == '__main__':
             with open(join(out_dir, imgnum + '.json'), 'w+') as f:
                 f.write('{}')
             continue
-        cells = range_calculator.convert_points_into_ranges(points)
-        out = [[int(cells[i][0]), int(cells[i][1]), int(cells[i][2]), int(cells[i][3])] for i in range(len(cells))]
-        out = {'corners': out}
+        columns = range_calculator.convert_points_into_ranges(points, sample_image.shape[0])
+
+        out = {'corners': columns}
         with open(join(out_dir, imgnum + '.json'), 'w+') as f:
             print('segmented ' + flnm)
             f.write(json.dumps(out))
-
