@@ -94,10 +94,11 @@ def find_column_lines(deskewed_corners):
     return array1
 
 
-def create_ranges(columns):
+def create_ranges(columns, height):
     ranges = []
     i = 0
-    while i < len(columns)-2:
+    while i < len(columns)-1:
+        column = []
         j = 0
 
         if len(columns[i]) != len(columns[i+1]):
@@ -105,13 +106,18 @@ def create_ranges(columns):
             break
 
         while j < len(columns[i])-1 and j < len(columns[i+1])-1:
-            cell_range = [round(min(columns[i][j][x], columns[i][j+1][x])),
-                          round(max(columns[i+1][j][x], columns[i+1][j+1][x])),
-                          round(min(columns[i][j][y], columns[i+1][j][y])),
-                          round(max(columns[i][j+1][y], columns[i+1][j+1][y]))]
-            ranges.append(cell_range)
+            cell_range = [min(columns[i][j][x], columns[i][j+1][x]),
+                          max(columns[i+1][j][x], columns[i+1][j+1][x]),
+                          min(columns[i][j][y], columns[i+1][j][y]),
+                          max(columns[i][j+1][y], columns[i+1][j+1][y])]
+            if i < 10:
+                y_max = round(max(columns[i][50][y], columns[i + 1][50][y]))
+                cell_range[2] = round(y_max - ((y_max - cell_range[2])*(.9984+(.00005*i))))
+                cell_range[3] = round(y_max - ((y_max - cell_range[3])*(.9984+(.00005*i))))
+            column.append(cell_range)
             j = j + 1
 
+        ranges.append(column)
         i = i + 1
     return ranges
 
@@ -123,13 +129,13 @@ def flatten_matrix(matrix):
     return ptlist
 
 
-def convert_points_into_ranges(unsorted_points):
+def convert_points_into_ranges(unsorted_points, height):
     unsorted_points = flatten_matrix(unsorted_points)
-    angle = find_angle(unsorted_points)
-    unsorted_points = deskew_points(unsorted_points, angle)
+    # angle = find_angle(unsorted_points)
+    # unsorted_points = deskew_points(unsorted_points, angle)
     columns = find_column_lines(unsorted_points)
-    columns = reskew_points(columns, angle)
-    ranges = create_ranges(columns)
+    # columns = reskew_points(columns, angle)
+    ranges = create_ranges(columns, height)
     return ranges
 
 
